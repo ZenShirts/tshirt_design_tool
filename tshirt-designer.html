@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stitch &amp; Press — Custom Tee Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cotton:#F5F1E8;
+    --ink:#1A1A1A;
+    --rust:#C1440E;
+    --denim:#2E4A6B;
+    --olive:#6B7A4F;
+    --chalk:#D8D2C2;
+    --paper:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cotton);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(26,26,26,0.06) 1px, transparent 0);
+    background-size: 16px 16px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Archivo Black',sans-serif;}
+
+  header{
+    padding:22px 28px 16px;
+    border-bottom:3px solid var(--ink);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header .brand{
+    font-family:'Archivo Black',sans-serif;
+    font-size:26px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+  }
+  header .brand span{color:var(--rust);}
+  header .tagline{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#5b5b5b;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap:20px;
+    padding:22px;
+    align-items:start;
+  }
+  @media (max-width:1000px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:2px;
+    padding:16px;
+  }
+  .panel + .panel{margin-top:18px;}
+
+  .panel h2{
+    font-family:'Archivo Black',sans-serif;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2::before{
+    content:'';
+    width:8px;height:8px;
+    background:var(--rust);
+    display:inline-block;
+    border-radius:50%;
+  }
+
+  label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:#5b5b5b;
+    margin:12px 0 5px;
+    font-weight:600;
+  }
+  label:first-of-type{margin-top:0;}
+
+  input[type=text], select, input[type=number]{
+    width:100%;
+    padding:8px 9px;
+    border:1.5px solid var(--chalk);
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    background:#fff;
+  }
+  input[type=text]:focus, select:focus{outline:2px solid var(--denim);outline-offset:1px;}
+
+  input[type=range]{width:100%;accent-color:var(--rust);}
+  input[type=color]{
+    width:36px;height:32px;border:1.5px solid var(--ink);border-radius:3px;padding:0;cursor:pointer;background:none;
+  }
+
+  .row{display:flex;gap:8px;align-items:center;}
+  .row > *{flex:1;}
+  .toggle-group{display:flex;gap:6px;}
+  .toggle-btn{
+    flex:1;padding:6px 4px;border:1.5px solid var(--ink);background:#fff;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;border-radius:3px;
+    text-transform:uppercase;font-weight:600;
+  }
+  .toggle-btn.active{background:var(--ink);color:#fff;}
+
+  .swatches{display:flex;flex-wrap:wrap;gap:8px;}
+  .swatch{
+    width:28px;height:28px;border-radius:50%;
+    border:2px solid var(--ink);
+    cursor:pointer;
+    position:relative;
+  }
+  .swatch.selected::after{
+    content:'✓';
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:13px;font-weight:bold;
+    text-shadow:0 0 2px #000, 0 0 2px #000;
+  }
+
+  button.primary{
+    width:100%;
+    padding:10px;
+    background:var(--rust);
+    color:#fff;
+    border:2px solid var(--ink);
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    margin-top:10px;
+    letter-spacing:0.3px;
+  }
+  button.primary:hover{background:#a83a0c;}
+  button.secondary{
+    width:100%;
+    padding:9px;
+    background:#fff;
+    color:var(--ink);
+    border:1.5px solid var(--ink);
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  button.secondary:hover{background:var(--cotton);}
+
+  .file-drop{
+    border:2px dashed var(--chalk);
+    border-radius:4px;
+    padding:14px;
+    text-align:center;
+    font-size:12px;
+    color:#777;
+    cursor:pointer;
+  }
+  .file-drop:hover{border-color:var(--denim);color:var(--denim);}
+
+  /* Stage */
+  .stage-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .view-tabs{
+    display:flex;gap:0;margin-bottom:14px;
+    border:2px solid var(--ink);border-radius:20px;overflow:hidden;
+  }
+  .view-tabs button{
+    padding:8px 26px;
+    background:#fff;
+    border:none;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .view-tabs button.active{background:var(--ink);color:#fff;}
+
+  .canvas-frame{
+    position:relative;
+    background:
+      repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:10px;
+  }
+  #tshirtCanvas{
+    display:block;
+    max-width:100%;
+    height:auto;
+    touch-action:none;
+    cursor:default;
+  }
+  .reg-mark{
+    position:absolute;
+    width:16px;height:16px;
+    pointer-events:none;
+  }
+  .reg-mark svg{width:100%;height:100%;}
+  .reg-tl{top:-2px;left:-2px;}
+  .reg-tr{top:-2px;right:-2px;}
+  .reg-bl{bottom:-2px;left:-2px;}
+  .reg-br{bottom:-2px;right:-2px;}
+
+  .stage-hint{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#777;
+    margin-top:10px;
+    text-align:center;
+  }
+
+  /* Layers */
+  .layer-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 8px;
+    border:1.5px solid var(--chalk);
+    border-radius:3px;
+    margin-bottom:6px;
+    cursor:pointer;
+    font-size:12px;
+    background:#fff;
+  }
+  .layer-row.selected{border-color:var(--denim);background:#eef2f6;}
+  .layer-row .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .layer-row button{
+    border:none;background:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#666;
+  }
+  .layer-row button:hover{color:var(--rust);}
+  .empty-note{font-size:12px;color:#999;font-style:italic;}
+
+  /* Ticket */
+  .ticket{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:2px;
+    padding:18px 16px 16px;
+    position:relative;
+    transform:rotate(0.6deg);
+  }
+  .ticket::before{
+    content:'';
+    position:absolute;
+    top:16px; left:-9px;
+    width:16px;height:16px;
+    background:var(--cotton);
+    border:2px solid var(--ink);
+    border-radius:50%;
+  }
+  .ticket-top{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    border-bottom:2px dashed var(--chalk);
+    padding-bottom:10px;margin-bottom:10px;
+  }
+  .ticket-top .tt-label{
+    font-family:'Archivo Black',sans-serif;
+    font-size:13px;text-transform:uppercase;letter-spacing:0.5px;
+  }
+  .ticket-top .tt-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;}
+  .spec-line{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:3px 0;
+  }
+  .spec-line .k{color:#777;}
+  .spec-line .v{font-weight:600;}
+  .spec-total{
+    border-top:2px solid var(--ink);
+    margin-top:8px;padding-top:8px;
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;font-weight:700;
+  }
+  .spec-total .v{color:var(--rust);}
+  .stamp{
+    position:absolute;
+    top:38px; right:14px;
+    border:3px solid var(--rust);
+    color:var(--rust);
+    font-family:'Archivo Black',sans-serif;
+    font-size:11px;
+    text-transform:uppercase;
+    padding:4px 8px;
+    border-radius:4px;
+    transform:rotate(-9deg);
+    opacity:0.85;
+    letter-spacing:0.5px;
+    pointer-events:none;
+  }
+
+  textarea#orderCode{
+    width:100%;
+    height:90px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    border:1.5px solid var(--chalk);
+    border-radius:3px;
+    padding:8px;
+    resize:vertical;
+    margin-top:8px;
+  }
+  .copied-msg{
+    font-size:11px;color:var(--olive);font-weight:600;margin-top:4px;height:14px;
+  }
+
+  details.howto{margin-top:18px;}
+  details.howto summary{
+    cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    text-transform:uppercase;letter-spacing:0.5px;color:var(--denim);font-weight:600;
+    padding:4px 0;
+  }
+  details.howto .howto-body{
+    font-size:12.5px;line-height:1.55;color:#444;padding-top:8px;
+  }
+  details.howto ol{padding-left:18px;margin:6px 0;}
+  details.howto code{
+    background:var(--cotton);padding:1px 5px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+  }
+
+  footer{
+    text-align:center;
+    padding:20px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:#999;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">STITCH &amp; <span>PRESS</span></div>
+    <div class="tagline">custom tee designer — no printing press required</div>
+  </div>
+  <div class="tagline" style="text-align:right;">design in browser · export print-ready art · works standalone or embedded</div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: TOOLS -->
+  <div>
+    <div class="panel">
+      <h2>Shirt Color</h2>
+      <div class="swatches" id="colorSwatches"></div>
+      <label>Custom color</label>
+      <input type="color" id="customColor" value="#ffffff">
+    </div>
+
+    <div class="panel">
+      <h2>Add Text</h2>
+      <label>Wording</label>
+      <input type="text" id="textInput" placeholder="e.g. TEAM CHICOPEE" maxlength="40">
+      <label>Font</label>
+      <select id="fontSelect">
+        <option value="'Archivo Black',sans-serif">Archivo Black (bold)</option>
+        <option value="'Inter',sans-serif">Inter (clean)</option>
+        <option value="'IBM Plex Mono',monospace">Plex Mono (stencil)</option>
+        <option value="'Caveat',cursive">Caveat (script)</option>
+        <option value="Georgia, serif">Georgia (serif)</option>
+      </select>
+      <div class="row">
+        <div>
+          <label>Size</label>
+          <input type="range" id="textSize" min="14" max="90" value="34">
+        </div>
+        <div style="flex:0 0 44px;">
+          <label>Color</label>
+          <input type="color" id="textColor" value="#1a1a1a">
+        </div>
+      </div>
+      <div class="toggle-group" style="margin-top:10px;">
+        <button class="toggle-btn" id="boldBtn" type="button"><b>B</b></button>
+        <button class="toggle-btn" id="italicBtn" type="button"><i>I</i></button>
+      </div>
+      <button class="primary" id="addTextBtn">+ Add Text to Shirt</button>
+    </div>
+
+    <div class="panel">
+      <h2>Add Artwork</h2>
+      <div class="file-drop" id="fileDrop">
+        📁 click to upload a logo or image<br>(PNG, JPG, SVG)
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    </div>
+  </div>
+
+  <!-- CENTER: STAGE -->
+  <div class="stage-wrap">
+    <div class="view-tabs">
+      <button id="frontTab" class="active">Front</button>
+      <button id="backTab">Back</button>
+    </div>
+    <div class="canvas-frame">
+      <div class="reg-mark reg-tl">${regMarkSvg()}</div>
+      <div class="reg-mark reg-tr">${regMarkSvg()}</div>
+      <div class="reg-mark reg-bl">${regMarkSvg()}</div>
+      <div class="reg-mark reg-br">${regMarkSvg()}</div>
+      <canvas id="tshirtCanvas" width="500" height="620"></canvas>
+    </div>
+    <div class="stage-hint">drag to move · corner handle to resize · top handle to rotate · delete key removes selection</div>
+
+    <div class="panel" style="width:100%;max-width:460px;margin-top:20px;">
+      <h2>Layers</h2>
+      <div id="layerList"></div>
+      <div class="empty-note" id="emptyLayers">No design elements yet — add text or artwork to get started.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ORDER TICKET -->
+  <div>
+    <div class="panel">
+      <h2>Size &amp; Quantity</h2>
+      <label>Size</label>
+      <select id="sizeSelect">
+        <option>S</option><option>M</option><option selected>L</option>
+        <option>XL</option><option>XXL</option>
+      </select>
+      <label>Quantity</label>
+      <input type="number" id="qtyInput" min="1" max="500" value="1">
+    </div>
+
+    <div class="ticket">
+      <div class="stamp" id="qcStamp" style="display:none;">Ready to Print</div>
+      <div class="ticket-top">
+        <div class="tt-label">Print Ticket</div>
+        <div class="tt-num mono" id="ticketNum"></div>
+      </div>
+      <div class="spec-line"><span class="k">Shirt color</span><span class="v" id="specColor">White</span></div>
+      <div class="spec-line"><span class="k">Size</span><span class="v" id="specSize">L</span></div>
+      <div class="spec-line"><span class="k">Qty</span><span class="v" id="specQty">1</span></div>
+      <div class="spec-line"><span class="k">Print sides</span><span class="v" id="specSides">0</span></div>
+      <div class="spec-line"><span class="k">Design elements</span><span class="v" id="specLayers">0</span></div>
+      <div class="spec-total"><span>Est. total</span><span class="v" id="specTotal">$0.00</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>Export</h2>
+      <button class="primary" id="downloadBtn">⬇ Download Design (PNG)</button>
+      <button class="secondary" id="genCodeBtn">Generate Order Code</button>
+      <textarea id="orderCode" class="mono" readonly placeholder="Click 'Generate Order Code' — a compact encoded block appears here. Paste it into your Google Form."></textarea>
+      <button class="secondary" id="copyCodeBtn">Copy Code</button>
+      <div class="copied-msg" id="copiedMsg"></div>
+
+      <details class="howto">
+        <summary>▸ How to use this with Google Forms</summary>
+        <div class="howto-body">
+          Google Forms can't run interactive tools inside a question — it only embeds
+          static images/video. This workaround needs no backend at all:
+          <ol>
+            <li>Host this page (GitHub Pages, Netlify, or a Google Sites "Embed" block all work — it's a single HTML file).</li>
+            <li>In your Form's description, link to the hosted designer: "Design your shirt here, then paste your Order Code below."</li>
+            <li>Add a <b>paragraph text</b> question to your Form titled "Order Code."</li>
+            <li>Customers design here, click <code>Generate Order Code</code>, and paste the resulting text block into that Form field.</li>
+          </ol>
+          The code is a compact encoded blob, not plain text — it packs the shirt color, size, qty, and every layer
+          (text + artwork) into one short string. To turn a submitted code back into a design you can see and print,
+          open it in the companion <b>Order Code Decoder</b> page (paste the code, get the rendered design + a downloadable PNG).
+        </div>
+      </details>
+    </div>
+  </div>
+
+</div>
+
+<footer>Prices shown are illustrative — swap in your own pricing rules. Designs live only in this browser tab until downloaded or copied.</footer>
+
+<script>
+function regMarkSvg(){
+  return `<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#1A1A1A" stroke-width="1"/><line x1="8" y1="0" x2="8" y2="16" stroke="#1A1A1A" stroke-width="1"/><line x1="0" y1="8" x2="16" y2="8" stroke="#1A1A1A" stroke-width="1"/></svg>`;
+}
+document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg(); });
+</script>
+
+<script>
+(function(){
+  const canvas = document.getElementById('tshirtCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const COLORS = ['#FFFFFF','#1A1A1A','#C1440E','#2E4A6B','#6B7A4F','#D8D2C2','#7B2D3E','#E8C547'];
+
+  const PRINT_AREA = {
+    front: {x:165, y:190, w:170, h:250},
+    back:  {x:165, y:130, w:170, h:210}
+  };
+
+  let state = {
+    shirtColor: '#FFFFFF',
+    view: 'front',
+    bold:false, italic:false,
+    layers: { front:[], back:[] },
+    selectedId: null,
+    nextId: 1
+  };
+
+  let drag = null; // {mode:'move'|'resize'|'rotate', layerId, ...}
+
+  // ---------- Shirt silhouette ----------
+  function shirtPath(c){
+    c.beginPath();
+    c.moveTo(180,55);
+    c.lineTo(138,58);
+    c.lineTo(55,112);
+    c.lineTo(88,205);
+    c.lineTo(140,160);
+    c.lineTo(140,580);
+    c.quadraticCurveTo(150,600,172,600);
+    c.lineTo(328,600);
+    c.quadraticCurveTo(350,600,360,580);
+    c.lineTo(360,160);
+    c.lineTo(412,205);
+    c.lineTo(445,112);
+    c.lineTo(362,58);
+    c.lineTo(320,55);
+    c.quadraticCurveTo(308,92,250,92);
+    c.quadraticCurveTo(192,92,180,55);
+    c.closePath();
+  }
+
+  function drawShirt(){
+    ctx.save();
+    shirtPath(ctx);
+    ctx.fillStyle = state.shirtColor;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.stroke();
+    ctx.restore();
+
+    // subtle fabric shading
+    ctx.save();
+    shirtPath(ctx);
+    ctx.clip();
+    const grad = ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0,'rgba(0,0,0,0.06)');
+    grad.addColorStop(0.5,'rgba(255,255,255,0.05)');
+    grad.addColorStop(1,'rgba(0,0,0,0.08)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    // collar rib detail
+    ctx.beginPath();
+    ctx.moveTo(178,58);
+    ctx.quadraticCurveTo(250,100,322,58);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.stroke();
+
+    if(state.view === 'back'){
+      // back seam line
+      ctx.beginPath();
+      ctx.moveTo(250,92);
+      ctx.lineTo(250,595);
+      ctx.strokeStyle='rgba(0,0,0,0.06)';
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPrintGuide(){
+    const pa = PRINT_AREA[state.view];
+    ctx.save();
+    ctx.strokeStyle = 'rgba(46,74,107,0.35)';
+    ctx.setLineDash([5,5]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(pa.x,pa.y,pa.w,pa.h);
+    ctx.restore();
+  }
+
+  // ---------- Layer math ----------
+  function center(l){ return {x:l.x+l.w/2, y:l.y+l.h/2}; }
+  function localToWorld(l, lx, ly){
+    const rad = l.rot*Math.PI/180;
+    const c = center(l);
+    const cos=Math.cos(rad), sin=Math.sin(rad);
+    return { x:c.x + lx*cos - ly*sin, y:c.y + lx*sin + ly*cos };
+  }
+  function worldToLocal(l, wx, wy){
+    const rad = -l.rot*Math.PI/180;
+    const c = center(l);
+    const dx = wx-c.x, dy = wy-c.y;
+    const cos=Math.cos(rad), sin=Math.sin(rad);
+    return { x: dx*cos - dy*sin, y: dx*sin + dy*cos };
+  }
+  function pointInLayer(l, wx, wy){
+    const p = worldToLocal(l, wx, wy);
+    return Math.abs(p.x) <= l.w/2 && Math.abs(p.y) <= l.h/2;
+  }
+
+  function drawLayer(l){
+    ctx.save();
+    const c = center(l);
+    ctx.translate(c.x, c.y);
+    ctx.rotate(l.rot*Math.PI/180);
+    if(l.type === 'text'){
+      let fontStr = '';
+      if(l.italic) fontStr += 'italic ';
+      if(l.bold) fontStr += '700 '; else fontStr += '400 ';
+      fontStr += l.size+'px '+l.font;
+      ctx.font = fontStr;
+      ctx.fillStyle = l.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(l.text, 0, 0);
+    } else if(l.type === 'image' && l.img){
+      ctx.drawImage(l.img, -l.w/2, -l.h/2, l.w, l.h);
+    }
+    ctx.restore();
+  }
+
+  function drawSelection(l){
+    ctx.save();
+    const c = center(l);
+    ctx.translate(c.x, c.y);
+    ctx.rotate(l.rot*Math.PI/180);
+    ctx.strokeStyle = '#2E4A6B';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.strokeRect(-l.w/2, -l.h/2, l.w, l.h);
+    ctx.setLineDash([]);
+    // rotate handle line
+    ctx.beginPath();
+    ctx.moveTo(0,-l.h/2);
+    ctx.lineTo(0,-l.h/2-24);
+    ctx.stroke();
+    // rotate handle
+    ctx.beginPath();
+    ctx.arc(0,-l.h/2-24,6,0,Math.PI*2);
+    ctx.fillStyle = '#2E4A6B';
+    ctx.fill();
+    // resize handle
+    ctx.fillStyle = '#C1440E';
+    ctx.fillRect(l.w/2-6, l.h/2-6, 12, 12);
+    ctx.restore();
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    drawShirt();
+    drawPrintGuide();
+    const pa = PRINT_AREA[state.view];
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pa.x, pa.y, pa.w, pa.h);
+    ctx.clip();
+    state.layers[state.view].forEach(drawLayer);
+    ctx.restore();
+
+    const sel = getSelected();
+    if(sel) drawSelection(sel);
+
+    updateLayerList();
+    updateTicket();
+  }
+
+  function getSelected(){
+    return state.layers[state.view].find(l=>l.id===state.selectedId);
+  }
+
+  // ---------- Pointer interaction ----------
+  function canvasPoint(evt){
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = W/rect.width, scaleY = H/rect.height;
+    return {
+      x: (evt.clientX - rect.left)*scaleX,
+      y: (evt.clientY - rect.top)*scaleY
+    };
+  }
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    const p = canvasPoint(e);
+    const sel = getSelected();
+
+    if(sel){
+      const resizeHandle = localToWorld(sel, sel.w/2, sel.h/2);
+      const rotateHandle = localToWorld(sel, 0, -sel.h/2-24);
+      if(Math.hypot(p.x-resizeHandle.x, p.y-resizeHandle.y) < 12){
+        drag = {mode:'resize', id:sel.id};
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      if(Math.hypot(p.x-rotateHandle.x, p.y-rotateHandle.y) < 12){
+        drag = {mode:'rotate', id:sel.id};
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
+
+    const layers = state.layers[state.view];
+    for(let i=layers.length-1;i>=0;i--){
+      if(pointInLayer(layers[i], p.x, p.y)){
+        state.selectedId = layers[i].id;
+        const c = center(layers[i]);
+        drag = {mode:'move', id:layers[i].id, grabX:p.x-c.x, grabY:p.y-c.y};
+        canvas.setPointerCapture(e.pointerId);
+        render();
+        return;
+      }
+    }
+    state.selectedId = null;
+    render();
+  });
+
+  canvas.addEventListener('pointermove', (e)=>{
+    if(!drag) return;
+    const p = canvasPoint(e);
+    const l = state.layers[state.view].find(x=>x.id===drag.id);
+    if(!l) return;
+
+    if(drag.mode === 'move'){
+      const cx = p.x - drag.grabX, cy = p.y - drag.grabY;
+      l.x = cx - l.w/2;
+      l.y = cy - l.h/2;
+    } else if(drag.mode === 'resize'){
+      const local = worldToLocal(l, p.x, p.y);
+      const newW = Math.max(20, Math.abs(local.x)*2);
+      const newH = Math.max(20, Math.abs(local.y)*2);
+      const c = center(l);
+      l.w = newW; l.h = newH;
+      l.x = c.x - newW/2;
+      l.y = c.y - newH/2;
+      if(l.type==='text'){
+        l.size = Math.max(10, newH*0.55);
+      }
+    } else if(drag.mode === 'rotate'){
+      const c = center(l);
+      const angle = Math.atan2(p.y-c.y, p.x-c.x)*180/Math.PI + 90;
+      l.rot = angle;
+    }
+    render();
+  });
+
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>{
+    canvas.addEventListener(ev, ()=>{ drag = null; });
+  });
+
+  window.addEventListener('keydown', (e)=>{
+    if((e.key === 'Delete' || e.key === 'Backspace') && state.selectedId && document.activeElement === document.body){
+      removeLayer(state.selectedId);
+    }
+  });
+
+  // ---------- Layer creation ----------
+  function addTextLayer(){
+    const text = document.getElementById('textInput').value.trim();
+    if(!text) return;
+    const size = parseInt(document.getElementById('textSize').value,10);
+    const font = document.getElementById('fontSelect').value;
+    const color = document.getElementById('textColor').value;
+    const pa = PRINT_AREA[state.view];
+    // approximate width
+    ctx.font = size+'px '+font;
+    const textW = Math.min(pa.w, Math.max(60, ctx.measureText(text).width + 10));
+    const layer = {
+      id: state.nextId++,
+      type:'text',
+      text, font, size, color,
+      bold: state.bold, italic: state.italic,
+      w: textW, h: size*1.3,
+      x: pa.x + pa.w/2 - textW/2,
+      y: pa.y + pa.h/2 - (size*1.3)/2,
+      rot: 0
+    };
+    state.layers[state.view].push(layer);
+    state.selectedId = layer.id;
+    render();
+  }
+
+  function addImageLayer(dataUrl){
+    const img = new Image();
+    img.onload = ()=>{
+      const pa = PRINT_AREA[state.view];
+      const maxDim = Math.min(pa.w, pa.h) * 0.8;
+      const ratio = img.width/img.height;
+      let w = maxDim, h = maxDim/ratio;
+      if(h > maxDim){ h = maxDim; w = maxDim*ratio; }
+      const layer = {
+        id: state.nextId++,
+        type:'image',
+        img, src: dataUrl,
+        w, h,
+        x: pa.x + pa.w/2 - w/2,
+        y: pa.y + pa.h/2 - h/2,
+        rot: 0
+      };
+      state.layers[state.view].push(layer);
+      state.selectedId = layer.id;
+      render();
+    };
+    img.src = dataUrl;
+  }
+
+  function removeLayer(id){
+    state.layers[state.view] = state.layers[state.view].filter(l=>l.id!==id);
+    if(state.selectedId === id) state.selectedId = null;
+    render();
+  }
+
+  function moveLayer(id, dir){
+    const arr = state.layers[state.view];
+    const idx = arr.findIndex(l=>l.id===id);
+    if(idx<0) return;
+    const newIdx = idx+dir;
+    if(newIdx<0 || newIdx>=arr.length) return;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    render();
+  }
+
+  function duplicateLayer(id){
+    const arr = state.layers[state.view];
+    const l = arr.find(x=>x.id===id);
+    if(!l) return;
+    const copy = Object.assign({}, l, {id: state.nextId++, x:l.x+12, y:l.y+12});
+    arr.push(copy);
+    state.selectedId = copy.id;
+    render();
+  }
+
+  // ---------- Layer list UI ----------
+  function updateLayerList(){
+    const listEl = document.getElementById('layerList');
+    const emptyEl = document.getElementById('emptyLayers');
+    const layers = state.layers[state.view];
+    listEl.innerHTML = '';
+    emptyEl.style.display = layers.length ? 'none' : 'block';
+    layers.forEach((l, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'layer-row' + (l.id===state.selectedId ? ' selected':'');
+      const name = l.type==='text' ? ('“'+l.text+'”') : 'Image layer';
+      row.innerHTML = `
+        <span>${l.type==='text'?'🅰️':'🖼️'}</span>
+        <span class="lname">${name}</span>
+        <button data-act="up" title="Bring forward">▲</button>
+        <button data-act="down" title="Send backward">▼</button>
+        <button data-act="dup" title="Duplicate">⧉</button>
+        <button data-act="del" title="Delete">✕</button>
+      `;
+      row.addEventListener('click', (e)=>{
+        if(e.target.tagName === 'BUTTON') return;
+        state.selectedId = l.id;
+        render();
+      });
+      row.querySelector('[data-act=up]').addEventListener('click', ()=>moveLayer(l.id,1));
+      row.querySelector('[data-act=down]').addEventListener('click', ()=>moveLayer(l.id,-1));
+      row.querySelector('[data-act=dup]').addEventListener('click', ()=>duplicateLayer(l.id));
+      row.querySelector('[data-act=del]').addEventListener('click', ()=>removeLayer(l.id));
+      listEl.appendChild(row);
+    });
+  }
+
+  // ---------- Ticket / pricing ----------
+  function colorName(hex){
+    const map = {'#FFFFFF':'White','#1A1A1A':'Black','#C1440E':'Rust','#2E4A6B':'Denim Blue','#6B7A4F':'Olive','#D8D2C2':'Chalk','#7B2D3E':'Wine','#E8C547':'Mustard'};
+    return map[hex.toUpperCase()] || hex.toUpperCase();
+  }
+
+  function updateTicket(){
+    document.getElementById('specColor').textContent = colorName(state.shirtColor);
+    document.getElementById('specSize').textContent = document.getElementById('sizeSelect').value;
+    const qty = parseInt(document.getElementById('qtyInput').value,10) || 1;
+    document.getElementById('specQty').textContent = qty;
+
+    const sidesUsed = (state.layers.front.length>0?1:0) + (state.layers.back.length>0?1:0);
+    document.getElementById('specSides').textContent = sidesUsed;
+    const totalLayers = state.layers.front.length + state.layers.back.length;
+    document.getElementById('specLayers').textContent = totalLayers;
+
+    document.getElementById('qcStamp').style.display = totalLayers>0 ? 'block':'none';
+
+    // illustrative pricing
+    const base = 14.99;
+    const sizeUpcharge = document.getElementById('sizeSelect').value === 'XXL' ? 2 : 0;
+    const sidesFee = sidesUsed * 3;
+    const layerFee = Math.max(0, totalLayers-1) * 0.75;
+    const unitPrice = base + sizeUpcharge + sidesFee + layerFee;
+    let total = unitPrice * qty;
+    if(qty >= 25) total *= 0.9;
+    else if(qty >= 10) total *= 0.95;
+    document.getElementById('specTotal').textContent = '$' + total.toFixed(2);
+
+    if(!document.getElementById('ticketNum').textContent){
+      document.getElementById('ticketNum').textContent = '#'+Math.floor(1000+Math.random()*9000);
+    }
+  }
+
+  // ---------- Export ----------
+  function downloadDesign(){
+    const link = document.createElement('a');
+    link.download = 'tshirt-design-'+state.view+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  // Safe unicode-aware base64 helpers (avoids deprecated escape/unescape)
+  function utf8ToB64(str){
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+      (_, hex) => String.fromCharCode(parseInt(hex, 16))));
+  }
+
+  // Shrinks an image layer's artwork before embedding it in the code,
+  // so codes stay short enough to paste into a form field.
+  function compressImageForCode(img, maxDim, quality){
+    maxDim = maxDim || 380; quality = quality || 0.62;
+    let w = img.width, h = img.height;
+    if(w >= h){ if(w > maxDim){ h = h*(maxDim/w); w = maxDim; } }
+    else { if(h > maxDim){ w = w*(maxDim/h); h = maxDim; } }
+    const c = document.createElement('canvas');
+    c.width = Math.max(1,Math.round(w));
+    c.height = Math.max(1,Math.round(h));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', quality);
+  }
+
+  function generateOrderCode(){
+    const qty = parseInt(document.getElementById('qtyInput').value,10) || 1;
+    const size = document.getElementById('sizeSelect').value;
+
+    const data = {
+      v: 1,
+      tk: document.getElementById('ticketNum').textContent.replace('#',''),
+      col: state.shirtColor,
+      sz: size,
+      q: qty,
+      tot: document.getElementById('specTotal').textContent,
+      L: {}
+    };
+
+    ['front','back'].forEach(view=>{
+      data.L[view] = state.layers[view].map(l=>{
+        if(l.type === 'text'){
+          return {
+            t:'x', s:l.text, f:l.font, sz:Math.round(l.size), c:l.color,
+            b:l.bold?1:0, i:l.italic?1:0,
+            x:Math.round(l.x), y:Math.round(l.y), w:Math.round(l.w), h:Math.round(l.h), r:Math.round(l.rot)
+          };
+        }
+        return {
+          t:'i', d: compressImageForCode(l.img),
+          x:Math.round(l.x), y:Math.round(l.y), w:Math.round(l.w), h:Math.round(l.h), r:Math.round(l.rot)
+        };
+      });
+    });
+
+    const json = JSON.stringify(data);
+    const code = 'SP1-' + utf8ToB64(json);
+    document.getElementById('orderCode').value = code;
+  }
+
+  // ---------- UI wiring ----------
+  function buildSwatches(){
+    const wrap = document.getElementById('colorSwatches');
+    COLORS.forEach(c=>{
+      const el = document.createElement('div');
+      el.className = 'swatch' + (c===state.shirtColor?' selected':'');
+      el.style.background = c;
+      el.addEventListener('click', ()=>{
+        state.shirtColor = c;
+        document.getElementById('customColor').value = c;
+        buildSwatches();
+        render();
+      });
+      wrap.appendChild(el);
+    });
+  }
+  function refreshSwatchSelection(){
+    document.querySelectorAll('.swatch').forEach((el,i)=>{
+      el.classList.toggle('selected', COLORS[i]===state.shirtColor);
+    });
+  }
+
+  document.getElementById('customColor').addEventListener('input', (e)=>{
+    state.shirtColor = e.target.value;
+    refreshSwatchSelection();
+    render();
+  });
+
+  document.getElementById('frontTab').addEventListener('click', ()=>{
+    state.view='front'; state.selectedId=null;
+    document.getElementById('frontTab').classList.add('active');
+    document.getElementById('backTab').classList.remove('active');
+    render();
+  });
+  document.getElementById('backTab').addEventListener('click', ()=>{
+    state.view='back'; state.selectedId=null;
+    document.getElementById('backTab').classList.add('active');
+    document.getElementById('frontTab').classList.remove('active');
+    render();
+  });
+
+  document.getElementById('boldBtn').addEventListener('click', (e)=>{
+    state.bold = !state.bold;
+    e.currentTarget.classList.toggle('active', state.bold);
+  });
+  document.getElementById('italicBtn').addEventListener('click', (e)=>{
+    state.italic = !state.italic;
+    e.currentTarget.classList.toggle('active', state.italic);
+  });
+
+  document.getElementById('addTextBtn').addEventListener('click', addTextLayer);
+  document.getElementById('textInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') addTextLayer();
+  });
+
+  document.getElementById('fileDrop').addEventListener('click', ()=>{
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=> addImageLayer(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('sizeSelect').addEventListener('change', updateTicket);
+  document.getElementById('qtyInput').addEventListener('input', updateTicket);
+
+  document.getElementById('downloadBtn').addEventListener('click', downloadDesign);
+  document.getElementById('genCodeBtn').addEventListener('click', generateOrderCode);
+  document.getElementById('copyCodeBtn').addEventListener('click', ()=>{
+    const ta = document.getElementById('orderCode');
+    if(!ta.value){ generateOrderCode(); }
+    ta.select();
+    document.execCommand('copy');
+    const msg = document.getElementById('copiedMsg');
+    msg.textContent = 'Copied to clipboard ✓';
+    setTimeout(()=>{ msg.textContent=''; }, 2000);
+  });
+
+  buildSwatches();
+  render();
+})();
+</script>
+
+</body>
+</html>

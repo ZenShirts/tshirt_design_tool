@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stitch &amp; Press — Order Code Decoder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cotton:#F5F1E8;
+    --ink:#1A1A1A;
+    --rust:#C1440E;
+    --denim:#2E4A6B;
+    --olive:#6B7A4F;
+    --chalk:#D8D2C2;
+    --paper:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cotton);
+    background-image: radial-gradient(circle at 1px 1px, rgba(26,26,26,0.06) 1px, transparent 0);
+    background-size: 16px 16px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header{
+    padding:22px 28px 16px;
+    border-bottom:3px solid var(--ink);
+    display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  }
+  header .brand{font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:0.5px;text-transform:uppercase;}
+  header .brand span{color:var(--rust);}
+  header .tagline{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#5b5b5b;}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:24px;}
+
+  .panel{background:var(--paper);border:2px solid var(--ink);border-radius:2px;padding:18px;}
+  .panel h2{
+    font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:1px;
+    margin:0 0 12px;display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:'';width:8px;height:8px;background:var(--rust);display:inline-block;border-radius:50%;}
+
+  textarea#codeInput{
+    width:100%;height:110px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border:1.5px solid var(--chalk);border-radius:3px;padding:10px;resize:vertical;
+  }
+  button.primary{
+    padding:11px 22px;background:var(--rust);color:#fff;border:2px solid var(--ink);border-radius:3px;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:13px;cursor:pointer;margin-top:10px;
+  }
+  button.primary:hover{background:#a83a0c;}
+  button.secondary{
+    padding:9px 16px;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:3px;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;margin-top:8px;margin-right:8px;
+  }
+  button.secondary:hover{background:var(--cotton);}
+
+  .error-box{
+    display:none;
+    margin-top:14px;padding:12px 14px;
+    background:#fdeeea;border:1.5px solid var(--rust);border-radius:4px;
+    font-size:13px;color:#8a2c0d;
+  }
+
+  .result{display:none;margin-top:22px;}
+  .result-grid{
+    display:grid;grid-template-columns: 1fr 300px;gap:20px;align-items:start;
+  }
+  @media (max-width:820px){ .result-grid{grid-template-columns:1fr;} }
+
+  .stage-wrap{display:flex;flex-direction:column;align-items:center;}
+  .view-tabs{display:flex;gap:0;margin-bottom:14px;border:2px solid var(--ink);border-radius:20px;overflow:hidden;}
+  .view-tabs button{
+    padding:8px 26px;background:#fff;border:none;font-family:'IBM Plex Mono',monospace;font-size:12px;
+    text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-weight:600;
+  }
+  .view-tabs button.active{background:var(--ink);color:#fff;}
+  .view-tabs button:disabled{opacity:0.35;cursor:not-allowed;}
+
+  .canvas-frame{
+    position:relative;
+    background:repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+    border:2px solid var(--ink);border-radius:6px;padding:10px;
+  }
+  #shirtCanvas{display:block;max-width:100%;height:auto;}
+
+  .ticket{
+    background:var(--paper);border:2px solid var(--ink);border-radius:2px;
+    padding:18px 16px 16px;position:relative;transform:rotate(0.6deg);
+  }
+  .ticket::before{
+    content:'';position:absolute;top:16px;left:-9px;width:16px;height:16px;
+    background:var(--cotton);border:2px solid var(--ink);border-radius:50%;
+  }
+  .ticket-top{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    border-bottom:2px dashed var(--chalk);padding-bottom:10px;margin-bottom:10px;
+  }
+  .ticket-top .tt-label{font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;}
+  .ticket-top .tt-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;}
+  .spec-line{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:3px 0;}
+  .spec-line .k{color:#777;}
+  .spec-line .v{font-weight:600;}
+  .spec-total{
+    border-top:2px solid var(--ink);margin-top:8px;padding-top:8px;
+    display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;
+  }
+  .spec-total .v{color:var(--rust);}
+  .stamp{
+    position:absolute;top:38px;right:14px;border:3px solid var(--rust);color:var(--rust);
+    font-family:'Archivo Black',sans-serif;font-size:11px;text-transform:uppercase;padding:4px 8px;
+    border-radius:4px;transform:rotate(-9deg);opacity:0.85;letter-spacing:0.5px;pointer-events:none;
+  }
+
+  .hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#777;margin-top:6px;}
+  footer{text-align:center;padding:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#999;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">STITCH &amp; <span>PRESS</span></div>
+    <div class="tagline">order code decoder — turns a pasted code back into a print-ready design</div>
+  </div>
+  <div class="tagline" style="text-align:right;">pairs with the Stitch &amp; Press Designer</div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2>Paste Order Code</h2>
+    <textarea id="codeInput" class="mono" placeholder="Paste the SP1-... code from a Google Form response here."></textarea>
+    <div class="hint">This runs entirely in your browser — nothing is uploaded anywhere.</div>
+    <button class="primary" id="decodeBtn">Decode Design</button>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-grid">
+      <div class="stage-wrap">
+        <div class="view-tabs">
+          <button id="frontTab" class="active">Front</button>
+          <button id="backTab">Back</button>
+        </div>
+        <div class="canvas-frame">
+          <canvas id="shirtCanvas" width="500" height="620"></canvas>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="secondary" id="downloadFrontBtn">⬇ Download Front PNG</button>
+          <button class="secondary" id="downloadBackBtn">⬇ Download Back PNG</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="ticket">
+          <div class="stamp" id="qcStamp">Ready to Print</div>
+          <div class="ticket-top">
+            <div class="tt-label">Print Ticket</div>
+            <div class="tt-num mono" id="ticketNum"></div>
+          </div>
+          <div class="spec-line"><span class="k">Shirt color</span><span class="v" id="specColor"></span></div>
+          <div class="spec-line"><span class="k">Size</span><span class="v" id="specSize"></span></div>
+          <div class="spec-line"><span class="k">Qty</span><span class="v" id="specQty"></span></div>
+          <div class="spec-line"><span class="k">Print sides</span><span class="v" id="specSides"></span></div>
+          <div class="spec-line"><span class="k">Design elements</span><span class="v" id="specLayers"></span></div>
+          <div class="spec-total"><span>Est. total</span><span class="v" id="specTotal"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Renders using the same layout engine as the Stitch &amp; Press Designer, so positions and sizing match exactly.</footer>
+
+<script>
+(function(){
+  const canvas = document.getElementById('shirtCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const PRINT_AREA = {
+    front: {x:165, y:190, w:170, h:250},
+    back:  {x:165, y:130, w:170, h:210}
+  };
+
+  const COLOR_NAMES = {'#FFFFFF':'White','#1A1A1A':'Black','#C1440E':'Rust','#2E4A6B':'Denim Blue','#6B7A4F':'Olive','#D8D2C2':'Chalk','#7B2D3E':'Wine','#E8C547':'Mustard'};
+
+  let decoded = null;
+  let view = 'front';
+
+  function b64ToUtf8(b64){
+    const bin = atob(b64);
+    let percentEncoded = '';
+    for(let i=0;i<bin.length;i++){
+      percentEncoded += '%' + ('00'+bin.charCodeAt(i).toString(16)).slice(-2);
+    }
+    return decodeURIComponent(percentEncoded);
+  }
+
+  function shirtPath(c){
+    c.beginPath();
+    c.moveTo(180,55);
+    c.lineTo(138,58);
+    c.lineTo(55,112);
+    c.lineTo(88,205);
+    c.lineTo(140,160);
+    c.lineTo(140,580);
+    c.quadraticCurveTo(150,600,172,600);
+    c.lineTo(328,600);
+    c.quadraticCurveTo(350,600,360,580);
+    c.lineTo(360,160);
+    c.lineTo(412,205);
+    c.lineTo(445,112);
+    c.lineTo(362,58);
+    c.lineTo(320,55);
+    c.quadraticCurveTo(308,92,250,92);
+    c.quadraticCurveTo(192,92,180,55);
+    c.closePath();
+  }
+
+  function drawShirt(color, currentView){
+    ctx.save();
+    shirtPath(ctx);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    shirtPath(ctx);
+    ctx.clip();
+    const grad = ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0,'rgba(0,0,0,0.06)');
+    grad.addColorStop(0.5,'rgba(255,255,255,0.05)');
+    grad.addColorStop(1,'rgba(0,0,0,0.08)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.beginPath();
+    ctx.moveTo(178,58);
+    ctx.quadraticCurveTo(250,100,322,58);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.stroke();
+
+    if(currentView === 'back'){
+      ctx.beginPath();
+      ctx.moveTo(250,92);
+      ctx.lineTo(250,595);
+      ctx.strokeStyle='rgba(0,0,0,0.06)';
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawLayer(l){
+    ctx.save();
+    const cx = l.x + l.w/2, cy = l.y + l.h/2;
+    ctx.translate(cx, cy);
+    ctx.rotate((l.r||0)*Math.PI/180);
+    if(l.t === 'x'){
+      let fontStr = '';
+      if(l.i) fontStr += 'italic ';
+      fontStr += (l.b ? '700 ' : '400 ');
+      fontStr += l.sz + 'px ' + l.f;
+      ctx.font = fontStr;
+      ctx.fillStyle = l.c;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(l.s, 0, 0);
+    } else if(l.t === 'i' && l._img){
+      ctx.drawImage(l._img, -l.w/2, -l.h/2, l.w, l.h);
+    }
+    ctx.restore();
+  }
+
+  function renderView(v){
+    view = v;
+    document.getElementById('frontTab').classList.toggle('active', v==='front');
+    document.getElementById('backTab').classList.toggle('active', v==='back');
+    ctx.clearRect(0,0,W,H);
+    drawShirt(decoded.col, v);
+    const pa = PRINT_AREA[v];
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pa.x, pa.y, pa.w, pa.h);
+    ctx.clip();
+    (decoded.L[v] || []).forEach(drawLayer);
+    ctx.restore();
+  }
+
+  function colorName(hex){
+    if(!hex) return '—';
+    return COLOR_NAMES[hex.toUpperCase()] || hex.toUpperCase();
+  }
+
+  function showError(msg){
+    const box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+  }
+
+  function decode(){
+    const raw = document.getElementById('codeInput').value.trim();
+    document.getElementById('errorBox').style.display = 'none';
+
+    if(!raw){ showError('Paste an order code first.'); return; }
+    if(!raw.startsWith('SP1-')){
+      showError('This doesn\'t look like a Stitch & Press order code (expected it to start with "SP1-"). Check you copied the whole thing.');
+      return;
+    }
+    let data;
+    try{
+      const json = b64ToUtf8(raw.slice(4));
+      data = JSON.parse(json);
+    } catch(e){
+      showError('Couldn\'t read this code — it may be incomplete or corrupted. Ask the customer to re-copy the full code.');
+      return;
+    }
+    if(!data || !data.L){
+      showError('This code decoded but is missing design data.');
+      return;
+    }
+
+    decoded = data;
+
+    // load any images referenced by layers, then render
+    const loads = [];
+    ['front','back'].forEach(v=>{
+      (decoded.L[v]||[]).forEach(l=>{
+        if(l.t === 'i' && l.d){
+          loads.push(new Promise(res=>{
+            const im = new Image();
+            im.onload = ()=>{ l._img = im; res(); };
+            im.onerror = ()=> res();
+            im.src = l.d;
+          }));
+        }
+      });
+    });
+
+    Promise.all(loads).then(()=>{
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('ticketNum').textContent = '#' + (decoded.tk || '----');
+      document.getElementById('specColor').textContent = colorName(decoded.col);
+      document.getElementById('specSize').textContent = decoded.sz || '—';
+      document.getElementById('specQty').textContent = decoded.q || '—';
+      const sidesUsed = ((decoded.L.front||[]).length>0?1:0) + ((decoded.L.back||[]).length>0?1:0);
+      document.getElementById('specSides').textContent = sidesUsed;
+      const totalLayers = (decoded.L.front||[]).length + (decoded.L.back||[]).length;
+      document.getElementById('specLayers').textContent = totalLayers;
+      document.getElementById('specTotal').textContent = decoded.tot || '—';
+      document.getElementById('qcStamp').style.display = totalLayers>0 ? 'block':'none';
+
+      document.getElementById('backTab').disabled = (decoded.L.back||[]).length === 0 && (decoded.L.front||[]).length > 0 ? false : false;
+
+      renderView('front');
+    });
+  }
+
+  function downloadView(v){
+    if(!decoded) return;
+    renderView(v);
+    const link = document.createElement('a');
+    link.download = 'tshirt-design-' + v + '-' + (decoded.tk||'order') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    renderView(view);
+  }
+
+  document.getElementById('decodeBtn').addEventListener('click', decode);
+  document.getElementById('codeInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && (e.metaKey || e.ctrlKey)) decode();
+  });
+  document.getElementById('frontTab').addEventListener('click', ()=>{ if(decoded) renderView('front'); });
+  document.getElementById('backTab').addEventListener('click', ()=>{ if(decoded) renderView('back'); });
+  document.getElementById('downloadFrontBtn').addEventListener('click', ()=>downloadView('front'));
+  document.getElementById('downloadBackBtn').addEventListener('click', ()=>downloadView('back'));
+})();
+</script>
+
+</body>
+</html>

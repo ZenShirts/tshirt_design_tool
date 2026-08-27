@@ -447,8 +447,8 @@
       <h2>Size &amp; Quantity</h2>
       <label>Size</label>
       <select id="sizeSelect">
-        <option>S</option><option>M</option><option selected>L</option>
-        <option>XL</option><option>XXL</option>
+        <option>Youth_XS</option><option>Youth_S</option><option>Youth_M</option><option selected>Youth_L</option>
+        <option>Youth_XL</option><option>Youth_XXL</option><option>Adult_S</option><option>Adult_M</option><option>Adult_L</option><option>Adult_XL</option><option>Adult_XXL</option><option>Adult_XXXL</option><option>Custom_Sizing&ast;</option>
       </select>
       <label>Quantity</label>
       <input type="number" id="qtyInput" min="1" max="500" value="1">
@@ -477,19 +477,15 @@
       <div class="copied-msg" id="copiedMsg"></div>
 
       <details class="howto">
-        <summary>▸ How to use this with Google Forms</summary>
+        <summary>&ast;About the Custom Sizing Option</summary>
         <div class="howto-body">
-          Google Forms can't run interactive tools inside a question — it only embeds
-          static images/video. This workaround needs no backend at all:
+          Go back to the google form. 
           <ol>
-            <li>Host this page (GitHub Pages, Netlify, or a Google Sites "Embed" block all work — it's a single HTML file).</li>
-            <li>In your Form's description, link to the hosted designer: "Design your shirt here, then paste your Order Code below."</li>
-            <li>Add a <b>paragraph text</b> question to your Form titled "Order Code."</li>
-            <li>Customers design here, click <code>Generate Order Code</code>, and paste the resulting text block into that Form field.</li>
+            <li>Proceed to paste the order code into the order code answer area.</li>
+            <li>Below, there should be a question titled 'Custom Sizing'; optional but required if you chose the 'Custom_Sizing' sizing option.</li>
+            <li>Inside of that answer box, please detailedly explain the custom sizing measurements for the t-shirt you would wish to order.</li>
           </ol>
-          The code is a compact encoded blob, not plain text — it packs the shirt color, size, qty, and every layer
-          (text + artwork) into one short string. To turn a submitted code back into a design you can see and print,
-          open it in the companion <b>Order Code Decoder</b> page (paste the code, get the rendered design + a downloadable PNG).
+          We may reach out to you for further clarification.
         </div>
       </details>
     </div>
@@ -905,7 +901,7 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
 
     // illustrative pricing
     const base = 10;
-    const upcharges = { Youth_S:0, Youth_M:0, Youth_L:0, Youth_XL:1, Youth_XXL:3, Adult_S:6, Adult_M:6, Adult_L:6, Adult_XL:7, Adult_XXL:8, Adult_XXXL:8.99 };
+    const upcharges = { Youth_XS:1, Youth_S:0, Youth_M:0, Youth_L:0, Youth_XL:1, Youth_XXL:3, Adult_S:6, Adult_M:6, Adult_L:6, Adult_XL:7, Adult_XXL:8, Adult_XXXL:8.99, Custom_Sizing:10 };
     const sizeUpcharge = upcharges[document.getElementById('sizeSelect').value] || 0;
     const sidesFee = sidesUsed * 3;
     const layerFee = Math.max(0, totalLayers-1) * 1.50;

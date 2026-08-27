@@ -368,6 +368,7 @@
     <div class="tagline">custom tee designer — no printing press required</div>
   </div>
   <div class="tagline" style="text-align:right;">design in browser · export print-ready art · works standalone or embedded</div>
+  <div class="brand" style="text-align:center; font-size:20px;">SALE! buy 3, cut total price in half!</div>
 </header>
 
 <div class="layout">
@@ -903,12 +904,13 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     const base = 10;
     const upcharges = { Youth_XS:1, Youth_S:0, Youth_M:0, Youth_L:0, Youth_XL:1, Youth_XXL:3, Adult_S:6, Adult_M:6, Adult_L:6, Adult_XL:7, Adult_XXL:8, Adult_XXXL:8.99, Custom_Sizing:10 };
     const sizeUpcharge = upcharges[document.getElementById('sizeSelect').value] || 0;
-    const sidesFee = sidesUsed * 3;
-    const layerFee = Math.max(0, totalLayers-1) * 1.50;
+    const sidesFee = Math.max(0, sidesUsed-1) * 1;
+    const layerFee = Math.max(0, totalLayers-1) * 1.00;
     const unitPrice = base + sizeUpcharge + sidesFee + layerFee;
     let total = unitPrice * qty;
-    if(qty >= 25) total *= 0.9;
-    else if(qty >= 10) total *= 0.95;
+    if(qty >= 3) total *= 0.5;
+    if(qty >= 25) total *= 0.7;
+    else if(qty >= 10) total *= 0.9;
     document.getElementById('specTotal').textContent = '$' + total.toFixed(2);
 
     if(!document.getElementById('ticketNum').textContent){

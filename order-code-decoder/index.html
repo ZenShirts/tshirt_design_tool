@@ -154,8 +154,10 @@
           <canvas id="shirtCanvas" width="500" height="620"></canvas>
         </div>
         <div style="margin-top:12px;">
-          <button class="secondary" id="downloadFrontBtn">⬇ Download Front PNG</button>
-          <button class="secondary" id="downloadBackBtn">⬇ Download Back PNG</button>
+          <button class="secondary" id="downloadFrontBtn">⬇ Download Front As PNG</button>
+          <button class="secondary" id="downloadBackBtn">⬇ Download Back As PNG</button>
+          <button class="secondary" id="downloadFrontSvgBtn">⬇ Download Front As SVG</button>
+          <button class="secondary" id="downloadBackSvgBtn">⬇ Download Back As SVG</button>
         </div>
       </div>
 
@@ -182,215 +184,304 @@
 <footer>Renders using the same layout engine as the ZenShirts Designer, so positions and sizing match exactly.</footer>
 
 <script>
-(function(){
-  const canvas = document.getElementById('shirtCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+(function() {
+    const canvas = document.getElementById('shirtCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width,
+        H = canvas.height;
 
-  const PRINT_AREA = {
-    front: {x:165, y:190, w:170, h:250},
-    back:  {x:165, y:130, w:170, h:210}
-  };
-
-  const COLOR_NAMES = {'#FFFFFF':'White','#1A1A1A':'Black','#C1440E':'Rust','#2E4A6B':'Denim Blue','#6B7A4F':'Olive','#D8D2C2':'Chalk','#7B2D3E':'Wine','#E8C547':'Mustard'};
-
-  let decoded = null;
-  let view = 'front';
-
-  function b64ToUtf8(b64){
-    const bin = atob(b64);
-    let percentEncoded = '';
-    for(let i=0;i<bin.length;i++){
-      percentEncoded += '%' + ('00'+bin.charCodeAt(i).toString(16)).slice(-2);
-    }
-    return decodeURIComponent(percentEncoded);
-  }
-
-  function shirtPath(c){
-    c.beginPath();
-    c.moveTo(180,55);
-    c.lineTo(138,58);
-    c.lineTo(55,112);
-    c.lineTo(88,205);
-    c.lineTo(140,160);
-    c.lineTo(140,580);
-    c.quadraticCurveTo(150,600,172,600);
-    c.lineTo(328,600);
-    c.quadraticCurveTo(350,600,360,580);
-    c.lineTo(360,160);
-    c.lineTo(412,205);
-    c.lineTo(445,112);
-    c.lineTo(362,58);
-    c.lineTo(320,55);
-    c.quadraticCurveTo(308,92,250,92);
-    c.quadraticCurveTo(192,92,180,55);
-    c.closePath();
-  }
-
-  function drawShirt(color, currentView){
-    ctx.save();
-    shirtPath(ctx);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    shirtPath(ctx);
-    ctx.clip();
-    const grad = ctx.createLinearGradient(0,0,W,H);
-    grad.addColorStop(0,'rgba(0,0,0,0.06)');
-    grad.addColorStop(0.5,'rgba(255,255,255,0.05)');
-    grad.addColorStop(1,'rgba(0,0,0,0.08)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,W,H);
-
-    ctx.beginPath();
-    ctx.moveTo(178,58);
-    ctx.quadraticCurveTo(250,100,322,58);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-    ctx.stroke();
-
-    if(currentView === 'back'){
-      ctx.beginPath();
-      ctx.moveTo(250,92);
-      ctx.lineTo(250,595);
-      ctx.strokeStyle='rgba(0,0,0,0.06)';
-      ctx.lineWidth=2;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function drawLayer(l){
-    ctx.save();
-    const cx = l.x + l.w/2, cy = l.y + l.h/2;
-    ctx.translate(cx, cy);
-    ctx.rotate((l.r||0)*Math.PI/180);
-    if(l.t === 'x'){
-      let fontStr = '';
-      if(l.i) fontStr += 'italic ';
-      fontStr += (l.b ? '700 ' : '400 ');
-      fontStr += l.sz + 'px ' + l.f;
-      ctx.font = fontStr;
-      ctx.fillStyle = l.c;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(l.s, 0, 0);
-    } else if(l.t === 'i' && l._img){
-      ctx.drawImage(l._img, -l.w/2, -l.h/2, l.w, l.h);
-    }
-    ctx.restore();
-  }
-
-  function renderView(v){
-    view = v;
-    document.getElementById('frontTab').classList.toggle('active', v==='front');
-    document.getElementById('backTab').classList.toggle('active', v==='back');
-    ctx.clearRect(0,0,W,H);
-    drawShirt(decoded.col, v);
-    const pa = PRINT_AREA[v];
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(pa.x, pa.y, pa.w, pa.h);
-    ctx.clip();
-    (decoded.L[v] || []).forEach(drawLayer);
-    ctx.restore();
-  }
-
-  function colorName(hex){
-    if(!hex) return '—';
-    return COLOR_NAMES[hex.toUpperCase()] || hex.toUpperCase();
-  }
-
-  function showError(msg){
-    const box = document.getElementById('errorBox');
-    box.textContent = msg;
-    box.style.display = 'block';
-    document.getElementById('result').style.display = 'none';
-  }
-
-  function decode(){
-    const raw = document.getElementById('codeInput').value.trim();
-    document.getElementById('errorBox').style.display = 'none';
-
-    if(!raw){ showError('Paste an order code first.'); return; }
-    if(!raw.startsWith('SP1-')){
-      showError('This doesn\'t look like a Stitch & Press order code (expected it to start with "SP1-"). Check you copied the whole thing.');
-      return;
-    }
-    let data;
-    try{
-      const json = b64ToUtf8(raw.slice(4));
-      data = JSON.parse(json);
-    } catch(e){
-      showError('Couldn\'t read this code — it may be incomplete or corrupted. Ask the customer to re-copy the full code.');
-      return;
-    }
-    if(!data || !data.L){
-      showError('This code decoded but is missing design data.');
-      return;
-    }
-
-    decoded = data;
-
-    // load any images referenced by layers, then render
-    const loads = [];
-    ['front','back'].forEach(v=>{
-      (decoded.L[v]||[]).forEach(l=>{
-        if(l.t === 'i' && l.d){
-          loads.push(new Promise(res=>{
-            const im = new Image();
-            im.onload = ()=>{ l._img = im; res(); };
-            im.onerror = ()=> res();
-            im.src = l.d;
-          }));
+    const PRINT_AREA = {
+        front: {
+            x: 165,
+            y: 190,
+            w: 170,
+            h: 250
+        },
+        back: {
+            x: 165,
+            y: 130,
+            w: 170,
+            h: 210
         }
-      });
+    };
+
+    const COLOR_NAMES = {
+        '#FFFFFF': 'White',
+        '#1A1A1A': 'Black',
+        '#C1440E': 'Rust',
+        '#2E4A6B': 'Denim Blue',
+        '#6B7A4F': 'Olive',
+        '#D8D2C2': 'Chalk',
+        '#7B2D3E': 'Wine',
+        '#E8C547': 'Mustard'
+    };
+
+    let decoded = null;
+    let view = 'front';
+
+    function b64ToUtf8(b64) {
+        const bin = atob(b64);
+        let percentEncoded = '';
+        for (let i = 0; i < bin.length; i++) {
+            percentEncoded += '%' + ('00' + bin.charCodeAt(i).toString(16)).slice(-2);
+        }
+        return decodeURIComponent(percentEncoded);
+    }
+
+    function shirtPath(c) {
+        c.beginPath();
+        c.moveTo(180, 55);
+        c.lineTo(138, 58);
+        c.lineTo(55, 112);
+        c.lineTo(88, 205);
+        c.lineTo(140, 160);
+        c.lineTo(140, 580);
+        c.quadraticCurveTo(150, 600, 172, 600);
+        c.lineTo(328, 600);
+        c.quadraticCurveTo(350, 600, 360, 580);
+        c.lineTo(360, 160);
+        c.lineTo(412, 205);
+        c.lineTo(445, 112);
+        c.lineTo(362, 58);
+        c.lineTo(320, 55);
+        c.quadraticCurveTo(308, 92, 250, 92);
+        c.quadraticCurveTo(192, 92, 180, 55);
+        c.closePath();
+    }
+
+    function drawShirt(color, currentView) {
+        ctx.save();
+        shirtPath(ctx);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        shirtPath(ctx);
+        ctx.clip();
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, 'rgba(0,0,0,0.06)');
+        grad.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.08)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.beginPath();
+        ctx.moveTo(178, 58);
+        ctx.quadraticCurveTo(250, 100, 322, 58);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+        ctx.stroke();
+
+        if (currentView === 'back') {
+            ctx.beginPath();
+            ctx.moveTo(250, 92);
+            ctx.lineTo(250, 595);
+            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawLayer(l) {
+        ctx.save();
+        const cx = l.x + l.w / 2,
+            cy = l.y + l.h / 2;
+        ctx.translate(cx, cy);
+        ctx.rotate((l.r || 0) * Math.PI / 180);
+        if (l.t === 'x') {
+            let fontStr = '';
+            if (l.i) fontStr += 'italic ';
+            fontStr += (l.b ? '700 ' : '400 ');
+            fontStr += l.sz + 'px ' + l.f;
+            ctx.font = fontStr;
+            ctx.fillStyle = l.c;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(l.s, 0, 0);
+        } else if (l.t === 'i' && l._img) {
+            ctx.drawImage(l._img, -l.w / 2, -l.h / 2, l.w, l.h);
+        }
+        ctx.restore();
+    }
+
+    function renderView(v) {
+        view = v;
+        document.getElementById('frontTab').classList.toggle('active', v === 'front');
+        document.getElementById('backTab').classList.toggle('active', v === 'back');
+        ctx.clearRect(0, 0, W, H);
+        drawShirt(decoded.col, v);
+        const pa = PRINT_AREA[v];
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(pa.x, pa.y, pa.w, pa.h);
+        ctx.clip();
+        (decoded.L[v] || []).forEach(drawLayer);
+        ctx.restore();
+    }
+
+    function colorName(hex) {
+        if (!hex) return '—';
+        return COLOR_NAMES[hex.toUpperCase()] || hex.toUpperCase();
+    }
+
+    function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+        document.getElementById('result').style.display = 'none';
+    }
+
+    function decode() {
+        const raw = document.getElementById('codeInput').value.trim();
+        document.getElementById('errorBox').style.display = 'none';
+
+        if (!raw) {
+            showError('Paste an order code first.');
+            return;
+        }
+        if (!raw.startsWith('SP1-')) {
+            showError('This doesn\'t look like a Stitch & Press order code (expected it to start with "SP1-"). Check you copied the whole thing.');
+            return;
+        }
+        let data;
+        try {
+            const json = b64ToUtf8(raw.slice(4));
+            data = JSON.parse(json);
+        } catch (e) {
+            showError('Couldn\'t read this code — it may be incomplete or corrupted. Ask the customer to re-copy the full code.');
+            return;
+        }
+        if (!data || !data.L) {
+            showError('This code decoded but is missing design data.');
+            return;
+        }
+
+        decoded = data;
+
+        // load any images referenced by layers, then render
+        const loads = [];
+        ['front', 'back'].forEach(v => {
+            (decoded.L[v] || []).forEach(l => {
+                if (l.t === 'i' && l.d) {
+                    loads.push(new Promise(res => {
+                        const im = new Image();
+                        im.onload = () => {
+                            l._img = im;
+                            res();
+                        };
+                        im.onerror = () => res();
+                        im.src = l.d;
+                    }));
+                }
+            });
+        });
+
+        Promise.all(loads).then(() => {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('ticketNum').textContent = '#' + (decoded.tk || '----');
+            document.getElementById('specColor').textContent = colorName(decoded.col);
+            document.getElementById('specSize').textContent = decoded.sz || '—';
+            document.getElementById('specQty').textContent = decoded.q || '—';
+            const sidesUsed = ((decoded.L.front || []).length > 0 ? 1 : 0) + ((decoded.L.back || []).length > 0 ? 1 : 0);
+            document.getElementById('specSides').textContent = sidesUsed;
+            const totalLayers = (decoded.L.front || []).length + (decoded.L.back || []).length;
+            document.getElementById('specLayers').textContent = totalLayers;
+            document.getElementById('specTotal').textContent = decoded.tot || '—';
+            document.getElementById('qcStamp').style.display = totalLayers > 0 ? 'block' : 'none';
+
+            document.getElementById('backTab').disabled = (decoded.L.back || []).length === 0 && (decoded.L.front || []).length > 0 ? false : false;
+
+            renderView('front');
+        });
+    }
+
+    function downloadView(v) {
+        if (!decoded) return;
+        renderView(v);
+        const link = document.createElement('a');
+        link.download = 'tshirt-design-' + v + '-' + (decoded.tk || 'order') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        renderView(view);
+    }
+
+    function pathToSVGD(pathFn) {
+        let d = '';
+        const recorder = {
+            beginPath: () => {},
+            moveTo: (x, y) => {
+                d += `M${x} ${y} `;
+            },
+            lineTo: (x, y) => {
+                d += `L${x} ${y} `;
+            },
+            quadraticCurveTo: (cx, cy, x, y) => {
+                d += `Q${cx} ${cy} ${x} ${y} `;
+            },
+            closePath: () => {
+                d += 'Z ';
+            }
+        };
+        pathFn(recorder);
+        return d.trim();
+    }
+
+    function exportSVG(view) {
+        const pa = PRINT_AREA[view];
+        const shirtD = pathToSVGD(shirtPath);
+
+        let layersSVG = '';
+        (decoded.L[view] || []).forEach(l => {
+            const cx = l.x + l.w / 2,
+                cy = l.y + l.h / 2;
+            const rot = l.r || 0;
+            if (l.t === 'x') {
+                const safeText = l.s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                layersSVG += `<text x="${cx}" y="${cy}" transform="rotate(${rot} ${cx} ${cy})" font-family="${l.f.replace(/'/g,'')}" font-size="${l.sz}" font-weight="${l.b?'700':'400'}" font-style="${l.i?'italic':'normal'}" fill="${l.c}" text-anchor="middle" dominant-baseline="central">${safeText}</text>\n`;
+            } else if (l.t === 'i' && l.d) {
+                layersSVG += `<image x="${l.x}" y="${l.y}" width="${l.w}" height="${l.h}" transform="rotate(${rot} ${cx} ${cy})" href="${l.d}" />\n`;
+            }
+        });
+
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <path d="${shirtD}" fill="${decoded.col}" stroke="rgba(0,0,0,0.55)" stroke-width="3"/>
+  <clipPath id="printArea"><rect x="${pa.x}" y="${pa.y}" width="${pa.w}" height="${pa.h}"/></clipPath>
+  <g clip-path="url(#printArea)">${layersSVG}</g>
+</svg>`;
+
+        const blob = new Blob([svg], {
+            type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `tshirt-design-${view}-${decoded.tk||'order'}.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('decodeBtn').addEventListener('click', decode);
+    document.getElementById('codeInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) decode();
     });
-
-    Promise.all(loads).then(()=>{
-      document.getElementById('result').style.display = 'block';
-      document.getElementById('ticketNum').textContent = '#' + (decoded.tk || '----');
-      document.getElementById('specColor').textContent = colorName(decoded.col);
-      document.getElementById('specSize').textContent = decoded.sz || '—';
-      document.getElementById('specQty').textContent = decoded.q || '—';
-      const sidesUsed = ((decoded.L.front||[]).length>0?1:0) + ((decoded.L.back||[]).length>0?1:0);
-      document.getElementById('specSides').textContent = sidesUsed;
-      const totalLayers = (decoded.L.front||[]).length + (decoded.L.back||[]).length;
-      document.getElementById('specLayers').textContent = totalLayers;
-      document.getElementById('specTotal').textContent = decoded.tot || '—';
-      document.getElementById('qcStamp').style.display = totalLayers>0 ? 'block':'none';
-
-      document.getElementById('backTab').disabled = (decoded.L.back||[]).length === 0 && (decoded.L.front||[]).length > 0 ? false : false;
-
-      renderView('front');
+    document.getElementById('frontTab').addEventListener('click', () => {
+        if (decoded) renderView('front');
     });
-  }
+    document.getElementById('backTab').addEventListener('click', () => {
+        if (decoded) renderView('back');
+    });
+    document.getElementById('downloadFrontBtn').addEventListener('click', () => downloadView('front'));
+    document.getElementById('downloadBackBtn').addEventListener('click', () => downloadView('back'));
+    document.getElementById('downloadFrontSvgBtn').addEventListener('click', () => exportSVG('front'));
+    document.getElementById('downloadBackSvgBtn').addEventListener('click', () => exportSVG('back'));
+})(); <
+/script>
 
-  function downloadView(v){
-    if(!decoded) return;
-    renderView(v);
-    const link = document.createElement('a');
-    link.download = 'tshirt-design-' + v + '-' + (decoded.tk||'order') + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    renderView(view);
-  }
-
-  document.getElementById('decodeBtn').addEventListener('click', decode);
-  document.getElementById('codeInput').addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' && (e.metaKey || e.ctrlKey)) decode();
-  });
-  document.getElementById('frontTab').addEventListener('click', ()=>{ if(decoded) renderView('front'); });
-  document.getElementById('backTab').addEventListener('click', ()=>{ if(decoded) renderView('back'); });
-  document.getElementById('downloadFrontBtn').addEventListener('click', ()=>downloadView('front'));
-  document.getElementById('downloadBackBtn').addEventListener('click', ()=>downloadView('back'));
-})();
-</script>
-
-</body>
-</html>
+<
+/body> <
+/html>

@@ -344,8 +344,8 @@
             showError('Paste an order code first.');
             return;
         }
-        if (!raw.startsWith('SP1-')) {
-            showError('This doesn\'t look like a Stitch & Press order code (expected it to start with "SP1-"). Check you copied the whole thing.');
+        if (!raw.startsWith('ZS1-')) {
+            showError('This doesn\'t look like a ZenShirts order code (expected it to start with "ZS1-"). Check you copied the whole thing.');
             return;
         }
         let data;
@@ -479,9 +479,8 @@
     document.getElementById('downloadBackBtn').addEventListener('click', () => downloadView('back'));
     document.getElementById('downloadFrontSvgBtn').addEventListener('click', () => exportSVG('front'));
     document.getElementById('downloadBackSvgBtn').addEventListener('click', () => exportSVG('back'));
-})(); <
-/script>
+})();
+</script>
 
-<
-/body> <
-/html>
+</body>
+</html>

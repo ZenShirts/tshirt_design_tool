@@ -977,7 +977,7 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     });
 
     const json = JSON.stringify(data);
-    const code = 'SP1-' + utf8ToB64(json);
+    const code = 'ZS1-' + utf8ToB64(json);
     document.getElementById('orderCode').value = code;
   }
 

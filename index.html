@@ -71,6 +71,14 @@
     color:#5b5b5b;
   }
 
+  .color-scroll{
+    max-height:120px; overflow-y:auto;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(26px,1fr)); gap:6px;
+    padding:8px; border:1.5px solid var(--chalk); border-radius:3px; background:#fff;
+  }
+  .color-chip{width:26px;height:26px;border-radius:50%;border:2px solid var(--ink);cursor:pointer;padding:0;}
+  .color-chip.selected{outline:3px solid var(--denim);outline-offset:1px;}
+    
   .layout{
     display:grid;
     grid-template-columns: 280px 1fr 300px;
@@ -159,7 +167,12 @@
     color:#fff;font-size:13px;font-weight:bold;
     text-shadow:0 0 2px #000, 0 0 2px #000;
   }
-
+  textarea#descInput{
+    width:100%; height:90px; padding:8px 9px; resize:vertical;
+    border:1.5px solid var(--chalk); border-radius:3px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+textarea#descInput:focus{outline:2px solid var(--denim);outline-offset:1px;}
   button.primary{
     width:100%;
     padding:10px;
@@ -279,6 +292,7 @@
   .layer-row button:hover{color:var(--rust);}
   .empty-note{font-size:12px;color:#999;font-style:italic;}
 
+  .stage-wrap{min-width:0;}
   /* Ticket */
   .ticket{
     background:var(--paper);
@@ -418,7 +432,10 @@
         </div>
         <div style="flex:0 0 44px;">
           <label>Color</label>
-          <input type="color" id="textColor" value="#1a1a1a">
+          <input type="hidden" id="textColor" value="#1A1A1A">
+          
+          <label>Text color — <span id="textColorName"></span></label>
+          <div class="color-scroll" id="textColorPicker"></div>
         </div>
       </div>
       <div class="toggle-group" style="margin-top:10px;">
@@ -435,6 +452,12 @@
       </div>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
     </div>
+    <div class="panel">
+      <h2>Description</h2>
+      <label for="descInput">Notes about this shirt</label>
+      <textarea id="descInput" maxlength="500" placeholder="Placement, event name, deadline, anything else we should know…"></textarea>
+      <div class="empty-note" id="descCount" style="text-align:right;">0 / 500</div>
+    </div>
   </div>
 
   <!-- CENTER: STAGE -->
@@ -442,6 +465,7 @@
     <div class="view-tabs">
       <button id="frontTab" class="active">Front</button>
       <button id="backTab">Back</button>
+      <button class="toggle-btn" id="splitBtn" type="button" style="flex:none;padding:6px 16px;margin-bottom:14px;">⇄ Side by side</button>
     </div>
     <div class="canvas-frame">
       <div class="reg-mark reg-tl">${regMarkSvg()}</div>
@@ -522,6 +546,42 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
 
 <script>
 (function(){
+  // -------- print colors --------
+  // Edit this list to match the inks you can actually print.
+const PRINT_COLORS = [
+  {name:'Black',       hex:'#1A1A1A'}, {name:'White',      hex:'#FFFFFF'},
+  {name:'Charcoal',    hex:'#4A4A4A'}, {name:'Silver',     hex:'#A8A8A8'},
+  {name:'Red',         hex:'#C8102E'}, {name:'Rust',       hex:'#C1440E'},
+  {name:'Orange',      hex:'#F26B21'}, {name:'Gold',       hex:'#E8C547'},
+  {name:'Yellow',      hex:'#F7D117'}, {name:'Lime',       hex:'#8CC63F'},
+  {name:'Kelly Green', hex:'#1E8C45'}, {name:'Olive',      hex:'#6B7A4F'},
+  {name:'Teal',        hex:'#00808A'}, {name:'Sky Blue',   hex:'#5BB5E5'},
+  {name:'Royal Blue',  hex:'#1F4FBF'}, {name:'Navy',       hex:'#1B2A49'},
+  {name:'Denim',       hex:'#2E4A6B'}, {name:'Purple',     hex:'#5B2C83'},
+  {name:'Pink',        hex:'#E86AA6'}, {name:'Wine',       hex:'#7B2D3E'},
+  {name:'Brown',       hex:'#5C3A21'}, {name:'Tan',        hex:'#C8A97E'}
+];
+
+(function buildTextColorPicker(){
+  const wrap = document.getElementById('textColorPicker');
+  const input = document.getElementById('textColor');
+  const nameEl = document.getElementById('textColorName');
+  function choose(c){
+    input.value = c.hex;
+    nameEl.textContent = c.name;
+    wrap.querySelectorAll('.color-chip').forEach(b=>b.classList.toggle('selected', b.dataset.hex === c.hex));
+  }
+  PRINT_COLORS.forEach(c=>{
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'color-chip';
+    b.style.background = c.hex; b.dataset.hex = c.hex;
+    b.title = c.name; b.setAttribute('aria-label', c.name);
+    b.addEventListener('click', ()=>choose(c));
+    wrap.appendChild(b);
+  });
+  choose(PRINT_COLORS[0]);
+})();
+  
   const canvas = document.getElementById('tshirtCanvas');
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -530,7 +590,7 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
 
   const PRINT_AREA = {
     front: {x:165, y:190, w:170, h:250},
-    back:  {x:165, y:130, w:170, h:210}
+    back:  {x:165, y:190, w:170, h:250}
   };
 
   let state = {
@@ -616,6 +676,8 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     ctx.strokeRect(pa.x,pa.y,pa.w,pa.h);
     ctx.restore();
   }
+
+  
 
   // ---------- Layer math ----------
   function center(l){ return {x:l.x+l.w/2, y:l.y+l.h/2}; }
@@ -710,14 +772,15 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
   // ---------- Pointer interaction ----------
   function canvasPoint(evt){
     const rect = canvas.getBoundingClientRect();
-    const scaleX = W/rect.width, scaleY = H/rect.height;
-    return {
-      x: (evt.clientX - rect.left)*scaleX,
-      y: (evt.clientY - rect.top)*scaleY
-    };
-  }
+    const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+    let x = (evt.clientX - rect.left)*scaleX;
+    const y = (evt.clientY - rect.top)*scaleY;
+    if(splitMode && state.view === 'back') x -= W;   // back shirt lives in the right half
+    return { x, y };
+}
 
   canvas.addEventListener('pointerdown', (e)=>{
+    pickSide(e);
     const p = canvasPoint(e);
     const sel = getSelected();
 
@@ -898,6 +961,10 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     });
   }
 
+  document.getElementById('descInput').addEventListener('input', e=>{
+    document.getElementById('descCount').textContent = e.target.value.length + ' / 500';
+  });
+
   // ---------- Ticket / pricing ----------
   function colorName(hex){
     const map = {'#FFFFFF':'White','#1A1A1A':'Black','#C1440E':'Rust','#2E4A6B':'Denim Blue','#6B7A4F':'Olive','#D8D2C2':'Chalk','#7B2D3E':'Wine','#E8C547':'Mustard','#FF0000':'Red','#0000FF':'Blue','#FFA500':'Orange','#FFFF00':'Yellow','#00FF00':'Green'};
@@ -960,7 +1027,7 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     c.width = Math.max(1,Math.round(w));
     c.height = Math.max(1,Math.round(h));
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', quality);
+    return c.toDataURL('image/webp', quality);
   }
 
   function generateOrderCode(){
@@ -974,6 +1041,7 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
       sz: size,
       q: qty,
       tot: document.getElementById('specTotal').textContent,
+      desc: document.getElementById('descInput').value.trim(),
       L: {}
     };
 
@@ -1080,6 +1148,48 @@ document.querySelectorAll('.reg-mark').forEach(el=>{ el.innerHTML = regMarkSvg()
     setTimeout(()=>{ msg.textContent=''; }, 2000);
   });
 
+  let splitMode = false;
+
+function switchSide(v){
+  if(v === state.view) return;
+  state.view = v;
+  state.selectedId = null;
+  document.getElementById('frontTab').classList.toggle('active', v === 'front');
+  document.getElementById('backTab').classList.toggle('active', v === 'back');
+}
+
+function pickSide(e){            // on a new press, the half you click becomes active
+  if(!splitMode) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  switchSide(x >= W ? 'back' : 'front');
+}
+
+const originalRender = render;
+render = function(){
+  if(!splitMode){ originalRender(); return; }
+  const active = state.view;
+  const other = active === 'front' ? 'back' : 'front';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  [other, active].forEach(v=>{   // active drawn last so layers list + ticket reflect it
+    state.view = v;
+    ctx.save();
+    ctx.translate(v === 'back' ? W : 0, 0);
+    originalRender();
+    ctx.restore();
+  });
+  state.view = active;
+};
+
+const splitBtn = document.getElementById('splitBtn');
+splitBtn.addEventListener('click', ()=>{
+  splitMode = !splitMode;
+  splitBtn.classList.toggle('active', splitMode);
+  canvas.width = splitMode ? W*2 : W;   // resizing clears the canvas; render() redraws
+  state.selectedId = null;
+  render();
+});
   buildSwatches();
   render();
 })();

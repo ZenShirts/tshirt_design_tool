@@ -71,11 +71,25 @@
     color:#5b5b5b;
   }
 
-  .color-scroll{
-    max-height:120px; overflow-y:auto;
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(26px,1fr)); gap:6px;
-    padding:8px; border:1.5px solid var(--chalk); border-radius:3px; background:#fff;
+  .color-pop{position:relative;}
+  .color-pop-btn{
+    width:100%; display:flex; align-items:center; gap:10px;
+    padding:7px 9px; background:#fff; cursor:pointer;
+    border:1.5px solid var(--chalk); border-radius:3px;
+    font-family:'Inter',sans-serif; font-size:13px; text-align:left;
   }
+  .color-pop-btn:focus-visible{outline:2px solid var(--denim);outline-offset:1px;}
+  .color-pop-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink);flex:none;}
+  .color-pop-btn .caret{margin-left:auto;color:#777;}
+  .color-pop-menu{
+    position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:30;
+    max-height:150px; overflow-y:auto;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(26px,1fr)); gap:6px;
+    padding:10px; background:#fff;
+    border:2px solid var(--ink); border-radius:4px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.18);
+  }
+  .color-pop-menu[hidden]{display:none;}
   .color-chip{width:26px;height:26px;border-radius:50%;border:2px solid var(--ink);cursor:pointer;padding:0;}
   .color-chip.selected{outline:3px solid var(--denim);outline-offset:1px;}
     
@@ -435,14 +449,17 @@ textarea#descInput:focus{outline:2px solid var(--denim);outline-offset:1px;}
         <div>
           <label>Size</label>
           <input type="range" id="textSize" min="14" max="90" value="34">
-        </div>
-        <br><br><br>
-        <div style="flex:0 0 44px;">
-          <label>Color</label>
-          <input type="hidden" id="textColor" value="#1A1A1A">
           
-          <label>Text color — <span id="textColorName"></span></label>
-          <div class="color-scroll" id="textColorPicker"></div>
+          <label>Text color</label>
+          <div class="color-pop" id="textColorPop">
+            <button type="button" class="color-pop-btn" id="textColorBtn" aria-haspopup="true" aria-expanded="false">
+              <span class="color-pop-dot" id="textColorDot"></span>
+              <span id="textColorName">Black</span>
+              <span class="caret">▾</span>
+            </button>
+            <div class="color-pop-menu" id="textColorMenu" hidden></div>
+          </div>
+          <input type="hidden" id="textColor" value="#1A1A1A">
         </div>
       </div>
       <div class="toggle-group" style="margin-top:10px;">
@@ -542,7 +559,7 @@ textarea#descInput:focus{outline:2px solid var(--denim);outline-offset:1px;}
 
 </div>
 
-<footer>Prices shown are illustrative — swap in your own pricing rules. Designs live only in this browser tab until downloaded or copied.</footer>
+<footer>This website is still a work in progress. If you have any comments or suggestions, please</footer>
 
 <script>
 function regMarkSvg(){
@@ -570,22 +587,36 @@ const PRINT_COLORS = [
 ];
 
 (function buildTextColorPicker(){
-  const wrap = document.getElementById('textColorPicker');
+  const menu  = document.getElementById('textColorMenu');
+  const btn   = document.getElementById('textColorBtn');
   const input = document.getElementById('textColor');
-  const nameEl = document.getElementById('textColorName');
+  const dot   = document.getElementById('textColorDot');
+  const nameEl= document.getElementById('textColorName');
+
+  function setOpen(open){
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open);
+  }
   function choose(c){
     input.value = c.hex;
+    dot.style.background = c.hex;
     nameEl.textContent = c.name;
-    wrap.querySelectorAll('.color-chip').forEach(b=>b.classList.toggle('selected', b.dataset.hex === c.hex));
+    menu.querySelectorAll('.color-chip').forEach(b=>b.classList.toggle('selected', b.dataset.hex === c.hex));
   }
+
   PRINT_COLORS.forEach(c=>{
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'color-chip';
     b.style.background = c.hex; b.dataset.hex = c.hex;
     b.title = c.name; b.setAttribute('aria-label', c.name);
-    b.addEventListener('click', ()=>choose(c));
-    wrap.appendChild(b);
+    b.addEventListener('click', ()=>{ choose(c); setOpen(false); });
+    menu.appendChild(b);
   });
+
+  btn.addEventListener('click', e=>{ e.stopPropagation(); setOpen(menu.hidden); });
+  document.addEventListener('click', e=>{ if(!menu.contains(e.target)) setOpen(false); });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape') setOpen(false); });
+
   choose(PRINT_COLORS[0]);
 })();
   

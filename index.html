@@ -153,6 +153,12 @@
   }
   .toggle-btn.active{background:var(--ink);color:#fff;}
 
+  .sideBySide-btn{
+    flex:1;padding:6px 4px;border:1.5px solid var(--denim);background:#fff;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;border-radius:3px;
+    text-transform:uppercase;font-weight:600;
+  }
+
   .swatches{display:flex;flex-wrap:wrap;gap:8px;}
   .swatch{
     width:28px;height:28px;border-radius:50%;
@@ -466,7 +472,7 @@ textarea#descInput:focus{outline:2px solid var(--denim);outline-offset:1px;}
     <div class="view-tabs">
       <button id="frontTab" class="active">Front</button>
       <button id="backTab">Back</button>
-      <button class="toggle-btn" id="splitBtn" type="button">⇄ Side by side</button>
+      <button class="sideBySide-Btn" id="splitBtn" type="button">⇄ Side by side</button>
     </div>
     <div class="canvas-frame">
       <div class="reg-mark reg-tl">${regMarkSvg()}</div>
